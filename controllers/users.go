@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Kally95/Go_Web_App/views"
+	schema "github.com/gorilla/Schema"
 )
 
 // NewUsers is used to create a new Users controller.
@@ -15,6 +16,11 @@ func NewUsers() *Users {
 	return &Users{
 		NewView: views.NewView("bootstrap", "views/users/new.gohtml"),
 	}
+}
+
+type SignupForm struct {
+	Email    string `schema:"email"`
+	Password string `schema:"password"`
 }
 
 type Users struct {
@@ -36,5 +42,13 @@ func (u *Users) New(w http.ResponseWriter, r *http.Request) {
 //
 // POST /signup
 func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "This is a temp response")
+	if err := r.ParseForm(); err != nil {
+		panic(err)
+	}
+	dec := schema.NewDecoder()
+	var form SignupForm
+	if err := dec.Decode(&form, r.PostForm); err != nil {
+		panic(err)
+	}
+	fmt.Fprint(w, form)
 }
