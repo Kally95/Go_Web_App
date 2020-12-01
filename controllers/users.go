@@ -31,6 +31,7 @@ type Users struct {
 //
 // GET /signup
 func (u *Users) New(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
 	if err := u.NewView.Render(w, nil); err != nil {
 		panic(err)
 	}
