@@ -28,12 +28,16 @@ func main() {
 		panic(err)
 	}
 
+	var id int
+	var name, email string
 	// The first version w/out the ID
-	_, err = db.Exec(`
-	  INSERT INTO users(name, email)
-	  VALUES($1, $2)`,
-		"Ali Kalkanel", "Kally95@Eth.io")
+	row := db.QueryRow(`
+	 SELECT id, name, email
+	 FROM users
+	 WHERE id=$1`, 3)
+	err = row.Scan(&id, &name, &email)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("id", id, "name", name, "email", email)
 }
