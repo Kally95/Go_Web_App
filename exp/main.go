@@ -31,13 +31,18 @@ func main() {
 	var id int
 	var name, email string
 	// The first version w/out the ID
-	row := db.QueryRow(`
+	rows, err := db.Query(`
 	 SELECT id, name, email
-	 FROM users
-	 WHERE id=$1`, 3)
-	err = row.Scan(&id, &name, &email)
+	 FROM users`)
+	defer rows.Close()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("id", id, "name", name, "email", email)
+	for rows.Next() {
+		err := rows.Scan(&id, &name, &email)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("id", id, "name", name, "email", email)
+	}
 }
