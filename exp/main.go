@@ -1,10 +1,10 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 
-	_ "github.com/lib/pq"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 const (
@@ -15,34 +15,25 @@ const (
 	dbname   = "go_web_dev"
 )
 
+type User struct {
+	gorm.Model
+	Name  string
+	Email string `gorm:"not null; unique_index"`
+}
+
 func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
-	db, err := sql.Open("postgres", psqlInfo)
+	db, err := gorm.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
 	}
-	err = db.Ping()
-	if err != nil {
+	defer db.Close()
+	if err := db.DB().Ping(); err != nil {
 		panic(err)
 	}
-
-	var id int
-	var name, email string
-	// The first version w/out the ID
-	rows, err := db.Query(`
-	 SELECT id, name, email
-	 FROM users`)
-	defer rows.Close()
-	if err != nil {
-		panic(err)
-	}
-	for rows.Next() {
-		err := rows.Scan(&id, &name, &email)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("id", id, "name", name, "email", email)
-	}
+	db.LogMode(true)
+	//db.DropTableIfExists(&User{})
+	db.AutoMigrate(&User{})
 }
