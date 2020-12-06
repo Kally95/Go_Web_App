@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -20,8 +17,16 @@ const (
 
 type User struct {
 	gorm.Model
-	Name  string
-	Email string `gorm:"not null; unique_index"`
+	Name   string
+	Email  string `gorm:"not null; unique_index"`
+	Orders []Order
+}
+
+type Order struct {
+	gorm.Model
+	UserID      uint
+	Amount      int
+	Description string
 }
 
 func main() {
@@ -33,31 +38,11 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
-	if err := db.DB().Ping(); err != nil {
-		panic(err)
-	}
+
 	db.LogMode(true)
-	//db.DropTableIfExists(&User{})
-	//db.AutoMigrate(&User{})
-	name, email := getInfo()
-	u := User{
-		Name:  name,
-		Email: email,
-	}
+	db.AutoMigrate(&User{})
 
-	if err = db.Create(&u).Error; err != nil {
-		panic(err)
-	}
-	fmt.Printf("%+v\n", u)
-}
-
-func getInfo() (name, email string) {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("What;s your name?")
-	name, _ = reader.ReadString('\n')
-	fmt.Println("What's your email address?")
-	email, _ = reader.ReadString('\n')
-	name = strings.TrimSpace(name)
-	email = strings.TrimSpace(email)
-	return name, email
+	var u User
+	db.First(&u)
+	fmt.Println(u)
 }
