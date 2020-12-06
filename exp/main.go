@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/Kally95/Go_Web_App/models"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
@@ -33,16 +34,24 @@ func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
-	db, err := gorm.Open("postgres", psqlInfo)
+	us, err := models.NewUserService(psqlInfo)
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
-
-	db.LogMode(true)
-	db.AutoMigrate(&User{})
-
-	var u User
-	db.First(&u)
-	fmt.Println(u)
+	defer us.Close()
+	// user := models.User{
+	// 	Name:  "James Bond",
+	// 	Email: "007@gmail.com",
+	// }
+	// if err := us.Create(&user); err != nil {
+	// 	panic(err)
+	// }
+	// us.DestructiveReset()
+	// db.LogMode(true)
+	// db.AutoMigrate(&User{})
+	user, err := us.ByID(2)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(user)
 }
