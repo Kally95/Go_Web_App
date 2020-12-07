@@ -47,16 +47,12 @@ func main() {
 	if err := us.Create(&user); err != nil {
 		panic(err)
 	}
-
-	user.Email = "008@cmail.com"
-	if err := us.Update(&user); err != nil {
+	if err := us.Delete(user.ID); err != nil {
 		panic(err)
 	}
-
-	userByID, err := us.ByID(user.ID)
+	userById, err := us.ByID(user.ID)
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println(userByID)
+	fmt.Println(userById)
 }
