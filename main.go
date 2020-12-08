@@ -26,6 +26,9 @@ func main() {
 		panic(err)
 	}
 	defer us.Close()
+
+	us.AutoMigrate()
+
 	staticC := controllers.NewStatic()
 	usersC := controllers.NewUsers(us)
 
