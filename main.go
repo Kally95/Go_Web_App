@@ -1,15 +1,33 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/Kally95/Go_Web_App/controllers"
+	"github.com/Kally95/Go_Web_App/models"
 	"github.com/gorilla/mux"
 )
 
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "secret"
+	dbname   = "go_web_dev"
+)
+
 func main() {
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+	us, err := models.NewUserService(psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer us.Close()
 	staticC := controllers.NewStatic()
-	usersC := controllers.NewUsers()
+	usersC := controllers.NewUsers(us)
 
 	r := mux.NewRouter()
 	r.Handle("/", staticC.Home).Methods("GET")

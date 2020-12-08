@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Kally95/Go_Web_App/models"
 	"github.com/Kally95/Go_Web_App/views"
 )
 
@@ -11,9 +12,10 @@ import (
 // This function will panic if the templates are not
 // parsed correctly, and should only be used during
 // initial setup.
-func NewUsers() *Users {
+func NewUsers(us *models.UserService) *Users {
 	return &Users{
 		NewView: views.NewView("bootstrap", "users/new"),
+		us:      us,
 	}
 }
 
@@ -24,6 +26,7 @@ type SignupForm struct {
 
 type Users struct {
 	NewView *views.View
+	us      *models.UserService
 }
 
 // New is used to render the form where a user can create
@@ -44,6 +47,13 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 	var form SignupForm
 	if err := parseForm(r, &form); err != nil {
 		panic(err)
+	}
+	user := models.User{
+		Name:  "",
+		Email: form.Email,
+	}
+	if err := u.us.Create(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	fmt.Fprintln(w, form)
 }
