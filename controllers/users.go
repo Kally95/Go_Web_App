@@ -43,7 +43,7 @@ func (u *Users) New(w http.ResponseWriter, r *http.Request) {
 }
 
 // Create is used to process the signup form when a user
-// submits it.
+// tries to create a new user account.
 //
 // POST /signup
 func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
@@ -52,13 +52,15 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	user := models.User{
-		Name:  form.Name,
-		Email: form.Email,
+		Name:     form.Name,
+		Email:    form.Email,
+		Password: form.Password,
 	}
 	if err := u.us.Create(&user); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	fmt.Fprintln(w, user)
+	fmt.Fprintln(w, "User is", user)
 }
 
 type LoginForm struct {
@@ -66,8 +68,8 @@ type LoginForm struct {
 	Password string `schema:"password"`
 }
 
-// Login is used to verify the provided email address and
-// password and then log the user in if they're correct.
+// Login is used to process the login form when a user
+// tries to log in as an existing user (via email & pw).
 //
 // POST /login
 func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
@@ -75,5 +77,15 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 	if err := parseForm(r, &form); err != nil {
 		panic(err)
 	}
-	fmt.Fprintln(w, form)
+	user, err := u.us.Authenticate(form.Email, form.Password)
+	switch err {
+	case models.ErrNotFound:
+		fmt.Fprintln(w, "Invalid email address.")
+	case models.ErrInvalidPassword:
+		fmt.Fprintln(w, "Invalid password provided.")
+	case nil:
+		fmt.Fprintln(w, user)
+	default:
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
