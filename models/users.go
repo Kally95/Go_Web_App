@@ -28,6 +28,13 @@ var (
 const userPwPepper = "secret-random-string"
 const hmacSecretKey = "secret-hmac-key"
 
+type UserDB interface {
+	// Methods for querying for single users
+	ByID(id uint) (*User, error)
+	ByEmail(email string) (*User, error)
+	ByRemember(token string) (*User, error)
+}
+
 func NewUserService(connectionInfo string) (*UserService, error) {
 	db, err := gorm.Open("postgres", connectionInfo)
 	if err != nil {
