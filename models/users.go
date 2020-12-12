@@ -6,6 +6,7 @@ import (
 	"github.com/Kally95/Go_Web_App/hash"
 	"github.com/Kally95/Go_Web_App/rand"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -56,6 +57,17 @@ type UserDB interface {
 	DestructiveReset() error
 }
 
+// userValidator is our validation layer that validates
+// and normalizes data before passing it on to the next
+// UserDB in our interface chain.
+type userValidator struct {
+	UserDB
+}
+
+// User represents the user model stored in our databse
+// This is used for user accounts, storing both an email
+// address and a password so users can log in and gain
+// access to their content.
 type User struct {
 	gorm.Model
 	Name         string
@@ -66,19 +78,34 @@ type User struct {
 	RememberHash string `gorm:"not null;unique_index"`
 }
 
-func NewUserService(connectionInfo string) (*UserService, error) {
+// UserService is a set of methods used to manipulate and
+// work with the user model
+type UserService interface {
+	// Authenticate will verify the provided email address and
+	// password are correct. If they are correct, the user
+	// corresponding to that email will be returned. Otherwise
+	// You will receive either:
+	// ErrNotFound, ErrInvalidPassword, or another error if
+	// something goes wrong.
+	Authenticate(email, password string) (*User, error)
+	UserDB
+}
+
+func NewUserService(connectionInfo string) (UserService, error) {
 	ug, err := newUserGorm(connectionInfo)
 	if err != nil {
 		return nil, err
 	}
-	return &UserService{
-		UserDB: userValidator{
+	return &userService{
+		UserDB: &userValidator{
 			UserDB: ug,
 		},
 	}, nil
 }
 
-type UserService struct {
+var _ UserService = &userService{}
+
+type userService struct {
 	UserDB
 }
 
@@ -92,7 +119,7 @@ type UserService struct {
 //   user, nil
 // Otherwise if another error is encountered this will return
 //   nil, error
-func (us *UserService) Authenticate(email, password string) (*User, error) {
+func (us *userService) Authenticate(email, password string) (*User, error) {
 	foundUser, err := us.ByEmail(email)
 	if err != nil {
 		return nil, err
@@ -110,8 +137,6 @@ func (us *UserService) Authenticate(email, password string) (*User, error) {
 	}
 }
 
-var _ UserDB = &userGorm{}
-
 func newUserGorm(connectionInfo string) (*userGorm, error) {
 	db, err := gorm.Open("postgres", connectionInfo)
 	if err != nil {
@@ -124,6 +149,8 @@ func newUserGorm(connectionInfo string) (*userGorm, error) {
 		hmac: hmac,
 	}, nil
 }
+
+var _ UserDB = &userGorm{}
 
 // userGorm represents our database interaction layer
 // and implements the UserDB interface fully.
@@ -252,11 +279,4 @@ func first(db *gorm.DB, dst interface{}) error {
 		return ErrNotFound
 	}
 	return err
-}
-
-// userValidator is our validation layer that validates
-// and normalizes data before passing it on to the next
-// UserDB in our interface chain.
-type userValidator struct {
-	UserDB
 }
