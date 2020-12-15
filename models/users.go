@@ -275,8 +275,8 @@ func (uv *userValidator) Create(user *User) error {
 		user.Remember = token
 	}
 
-	if err := runUserValFns(user,
-		uv.bcryptPassword, uv.hmacRemember); err != nil {
+	err := runUserValFns(user, uv.bcryptPassword, uv.hmacRemember)
+	if err != nil {
 		return err
 	}
 	return uv.UserDB.Create(user)
@@ -284,8 +284,8 @@ func (uv *userValidator) Create(user *User) error {
 
 // Update will hash a remember token if it is provided.
 func (uv *userValidator) Update(user *User) error {
-	if err := runUserValFns(user,
-		uv.bcryptPassword, uv.hmacRemember); err != nil {
+	err := runUserValFns(user, uv.bcryptPassword, uv.hmacRemember)
+	if err != nil {
 		return err
 	}
 	return uv.UserDB.Update(user)
