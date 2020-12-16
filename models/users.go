@@ -8,6 +8,7 @@ import (
 	"github.com/Kally95/Go_Web_App/hash"
 	"github.com/Kally95/Go_Web_App/rand"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -35,6 +36,10 @@ var (
 	// ErrEmailInvalid is returned when an email address provided
 	// does not match our requirements.
 	ErrEmailInvalid = errors.New("models: email address is not valid")
+
+	//ErrEmailTaken is returned when an email address provided
+	// is already existing.
+	ErrEmailTaken = errors.New("models: email address is already taken")
 )
 
 // UserDB is used to interact with the users database.
@@ -97,10 +102,7 @@ func NewUserService(connectionInfo string) (UserService, error) {
 	}
 	// this old line was in newUserGorm
 	hmac := hash.NewHMAC(hmacSecretKey)
-	uv := &userValidator{
-		hmac:   hmac,
-		UserDB: ug,
-	}
+	uv := newUserValidator(ug, hmac)
 	return &userService{
 		UserDB: uv,
 	}, nil
@@ -115,13 +117,13 @@ type userService struct {
 // Authenticate can be used to authenticate a user with the
 // provided email address and password.
 // If the email address provided is invalid, this will return
-//   nil, ErrNotFound
+// nil, ErrNotFound
 // If the password provided is invalid, this will return
-//   nil, ErrInvalidPassword
+// nil, ErrInvalidPassword
 // If the email and password are both valid, this will return
-//   user, nil
+// user, nil
 // Otherwise if another error is encountered this will return
-//   nil, error
+// nil, error
 func (us *userService) Authenticate(email, password string) (*User, error) {
 	foundUser, err := us.ByEmail(email)
 	if err != nil {
@@ -303,7 +305,9 @@ func (uv *userValidator) Create(user *User) error {
 		uv.setRememberIfUnset,
 		uv.hmacRemember,
 		uv.normalizeEmail,
-		uv.emailFormat)
+		uv.requireEmail,
+		uv.emailFormat,
+		uv.emailIsAvail)
 	if err != nil {
 		return err
 	}
@@ -317,7 +321,8 @@ func (uv *userValidator) Update(user *User) error {
 		uv.hmacRemember,
 		uv.normalizeEmail,
 		uv.requireEmail,
-		uv.emailFormat)
+		uv.emailFormat,
+		uv.emailIsAvail)
 	if err != nil {
 		return err
 	}
@@ -414,6 +419,26 @@ func (uv *userValidator) emailFormat(user *User) error {
 	}
 	if !uv.emailRegex.MatchString(user.Email) {
 		return ErrEmailInvalid
+	}
+	return nil
+}
+
+func (uv *userValidator) emailIsAvail(user *User) error {
+	existing, err := uv.ByEmail(user.Email)
+	if err == ErrNotFound {
+		return nil
+	}
+
+	if err != nil {
+		return err
+	}
+
+	// We found a user w/ this email address....
+	// If the found user has the same ID as this user, it is
+	// an update and this is the same user.
+
+	if user.ID != existing.ID {
+		return ErrEmailTaken
 	}
 	return nil
 }
