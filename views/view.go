@@ -31,8 +31,17 @@ type View struct {
 	Layout   string
 }
 
+// Render is used to render the view with the predefined layout.
 func (v *View) Render(w http.ResponseWriter, data interface{}) error {
 	w.Header().Set("Content-Type", "text/html")
+	switch data.(type) {
+	case Data:
+		// do nothing
+	default:
+		data = Data{
+			Yield: data,
+		}
+	}
 	return v.Template.ExecuteTemplate(w, v.Layout, data)
 }
 
@@ -42,6 +51,8 @@ func (v *View) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// LayoutFIles returns a slice of strings representing
+// the layout files used in our application.
 func layoutFiles() []string {
 	files, err := filepath.Glob(LayoutDir + "*" + TemplateExt)
 	if err != nil {
