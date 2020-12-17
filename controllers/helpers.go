@@ -1,16 +1,13 @@
 package controllers
 
 import (
-	"errors"
 	"net/http"
 
 	schema "github.com/gorilla/Schema"
 )
 
 func parseForm(r *http.Request, dst interface{}) error {
-	if true {
-		return errors.New("blah")
-	}
+
 	if err := r.ParseForm(); err != nil {
 		return err
 	}

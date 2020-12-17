@@ -62,16 +62,20 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		Password: form.Password,
 	}
 	if err := u.us.Create(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		vd.Alert = &views.Alert{
+			Level:   views.AlertLvlError,
+			Message: err.Error(),
+		}
+		u.NewView.Render(w, vd)
 		return
 	}
 
 	err := u.signIn(w, &user)
 	if err != nil {
-		// Temporarily render the error message for debugging
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
+
 	// Redirect to the cookie test page to test the cookie
 	http.Redirect(w, r, "/cookietest", http.StatusFound)
 }
