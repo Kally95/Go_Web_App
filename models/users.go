@@ -27,7 +27,7 @@ var (
 
 	// ErrInvalidPassword is returned when an invalid password
 	// is used when attempting to authenticate a user.
-	ErrInvalidPassword = errors.New("models: incorrect password provided")
+	ErrPasswordIncorrect = errors.New("models: incorrect password provided")
 
 	// ErrEmailRequired is return when an email address is
 	// not provided when creating a user.
@@ -40,6 +40,14 @@ var (
 	//ErrEmailTaken is returned when an email address provided
 	// is already existing.
 	ErrEmailTaken = errors.New("models: email address is already taken")
+
+	// ErrPasswordTooShort is returned when an update or create is
+	// attempted with a user password that is less than 8 characters.
+	ErrPasswordTooShort = errors.New("models: password must be atleast 8 characters long")
+
+	// ErrPasswordRequired is returned when a create is attempted
+	// without a user password provided.
+	ErrPasswordRequired = errors.New("models: password is required")
 )
 
 // UserDB is used to interact with the users database.
@@ -136,7 +144,7 @@ func (us *userService) Authenticate(email, password string) (*User, error) {
 	case nil:
 		return foundUser, nil
 	case bcrypt.ErrMismatchedHashAndPassword:
-		return nil, ErrInvalidPassword
+		return nil, ErrPasswordIncorrect
 	default:
 		return nil, err
 	}
@@ -301,7 +309,10 @@ func (uv *userValidator) ByRemember(token string) (*User, error) {
 // like the ID, CreatedAt, and UpdatedAt fields.
 func (uv *userValidator) Create(user *User) error {
 	err := runUserValFns(user,
+		uv.passwordRequired,
+		uv.passwordMinLength,
 		uv.bcryptPassword,
+		uv.passwordHashRequired,
 		uv.setRememberIfUnset,
 		uv.hmacRemember,
 		uv.normalizeEmail,
@@ -317,7 +328,9 @@ func (uv *userValidator) Create(user *User) error {
 // Update will hash a remember token if it is provided.
 func (uv *userValidator) Update(user *User) error {
 	err := runUserValFns(user,
+		uv.passwordMinLength,
 		uv.bcryptPassword,
+		uv.passwordHashRequired,
 		uv.hmacRemember,
 		uv.normalizeEmail,
 		uv.requireEmail,
@@ -439,6 +452,30 @@ func (uv *userValidator) emailIsAvail(user *User) error {
 
 	if user.ID != existing.ID {
 		return ErrEmailTaken
+	}
+	return nil
+}
+
+func (uv *userValidator) passwordMinLength(user *User) error {
+	if user.Password == "" {
+		return nil
+	}
+	if len(user.Password) < 8 {
+		return ErrPasswordTooShort
+	}
+	return nil
+}
+
+func (uv *userValidator) passwordRequired(user *User) error {
+	if user.Password == "" {
+		return ErrPasswordRequired
+	}
+	return nil
+}
+
+func (uv *userValidator) passwordHashRequired(user *User) error {
+	if user.PasswordHash == "" {
+		return ErrPasswordRequired
 	}
 	return nil
 }
