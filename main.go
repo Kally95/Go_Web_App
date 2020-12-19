@@ -19,7 +19,7 @@ const (
 
 func main() {
 	// Create a DB connection string and then use it to
-	// create our model services.
+	// create the model services.
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
@@ -29,9 +29,9 @@ func main() {
 		panic(err)
 	}
 	// TODO: Fix this
-	// defer us.Close()
-	// us.DestructiveReset()
-	// us.AutoMigrate()
+	defer services.Close()
+	// services.DestructiveReset()
+	services.AutoMigrate()
 
 	staticC := controllers.NewStatic()
 	usersC := controllers.NewUsers(services.User)
