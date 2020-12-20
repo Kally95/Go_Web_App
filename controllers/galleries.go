@@ -45,14 +45,3 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprint(w, gallery)
 }
-
-type userValFn func(*User) error
-
-func runUserValFns(user *User, fns ...userValFn) error {
-	for _, fn := range fns {
-		if err := fn(user); err != nil {
-			return err
-		}
-	}
-	return nil
-}

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Kally95/Go_Web_App/controllers"
+	"github.com/Kally95/Go_Web_App/middleware"
 	"github.com/Kally95/Go_Web_App/models"
 	"github.com/gorilla/mux"
 )
@@ -36,6 +37,9 @@ func main() {
 	staticC := controllers.NewStatic()
 	usersC := controllers.NewUsers(services.User)
 	galleriesC := controllers.NewGalleries(services.Gallery)
+	requireUserMw := middleware.RequireUser{
+		UserService: services.User,
+	}
 
 	r := mux.NewRouter()
 	r.Handle("/", staticC.Home).Methods("GET")
@@ -47,8 +51,9 @@ func main() {
 	r.HandleFunc("/cookietest", usersC.CookieTest).Methods("GET")
 
 	// Gallery routes
-	r.Handle("/galleries/new", galleriesC.New).Methods("GET")
-	r.HandleFunc("/galleries", galleriesC.Create).Methods("POST")
+	galleryNew := requireUserMw.Apply(galleriesC.New)
+	r.Handle("/galleries/new", requireUserMw.Apply(galleryNew)).Methods("GET")
+	r.HandleFunc("/galleries", requireUserMw.ApplyFn(galleriesC.Create)).Methods("POST")
 
 	http.ListenAndServe(":3000", r)
 }
