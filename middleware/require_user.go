@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Kally95/Go_Web_App/context"
 	"github.com/Kally95/Go_Web_App/models"
 )
 
@@ -35,6 +36,9 @@ func (mw *RequireUser) ApplyFn(next http.HandlerFunc) http.HandlerFunc {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
+		ctx := r.Context()
+		ctx = context.WithUser(ctx, user)
+		r = r.WithContext(ctx)
 		fmt.Println("User found: ", user)
 		next(w, r)
 	})
