@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	ShowGallery = "show_gallery"
-	EditGallery = "edit_gallery"
+	IndexGalleries = "index_galleries"
+	ShowGallery    = "show_gallery"
+	EditGallery    = "edit_gallery"
 )
 
 func NewGalleries(gs models.GalleryService, r *mux.Router) *Galleries {
@@ -39,17 +40,7 @@ type GalleryForm struct {
 	Title string `schema:"title"`
 }
 
-// GET /galleries/:id
-func (g *Galleries) Show(w http.ResponseWriter, r *http.Request) {
-	gallery, err := g.galleryByID(w, r)
-	if err != nil {
-		return
-	}
-	var vd views.Data
-	vd.Yield = gallery
-	g.ShowView.Render(w, vd)
-}
-
+// GET /galleries
 func (g *Galleries) Index(w http.ResponseWriter, r *http.Request) {
 	user := context.User(r.Context())
 	galleries, err := g.gs.ByUserID(user.ID)
@@ -59,7 +50,18 @@ func (g *Galleries) Index(w http.ResponseWriter, r *http.Request) {
 	}
 	var vd views.Data
 	vd.Yield = galleries
-	g.IndexView.Render(w, vd)
+	g.IndexView.Render(w, r, vd)
+}
+
+// GET /galleries/:id
+func (g *Galleries) Show(w http.ResponseWriter, r *http.Request) {
+	gallery, err := g.galleryByID(w, r)
+	if err != nil {
+		return
+	}
+	var vd views.Data
+	vd.Yield = gallery
+	g.ShowView.Render(w, r, vd)
 }
 
 // GET /galleries/:id/edit
@@ -75,7 +77,7 @@ func (g *Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 	}
 	var vd views.Data
 	vd.Yield = gallery
-	g.EditView.Render(w, vd)
+	g.EditView.Render(w, r, vd)
 }
 
 // POST /galleries/:id/update
@@ -94,24 +96,49 @@ func (g *Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	var form GalleryForm
 	if err := parseForm(r, &form); err != nil {
 		vd.SetAlert(err)
-		g.EditView.Render(w, vd)
+		g.EditView.Render(w, r, vd)
 		return
 	}
 	gallery.Title = form.Title
-	// TODO: Persist this gallery change in the DB after
-	// we add an Update method to our GalleryService in the
-	// models package.
 	err = g.gs.Update(gallery)
 	if err != nil {
 		vd.SetAlert(err)
-		g.EditView.Render(w, vd)
+	} else {
+		vd.Alert = &views.Alert{
+			Level:   views.AlertLvlSuccess,
+			Message: "Gallery successfully updated!",
+		}
+	}
+	g.EditView.Render(w, r, vd)
+}
+
+// POST /galleries
+func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
+	var vd views.Data
+	var form GalleryForm
+	if err := parseForm(r, &form); err != nil {
+		vd.SetAlert(err)
+		g.New.Render(w, r, vd)
 		return
 	}
-	vd.Alert = &views.Alert{
-		Level:   views.AlertLvlSuccess,
-		Message: "Gallery updated successfully!",
+	user := context.User(r.Context())
+	gallery := models.Gallery{
+		Title:  form.Title,
+		UserID: user.ID,
 	}
-	g.EditView.Render(w, vd)
+	if err := g.gs.Create(&gallery); err != nil {
+		vd.SetAlert(err)
+		g.New.Render(w, r, vd)
+		return
+	}
+
+	url, err := g.r.Get(EditGallery).URL("id",
+		strconv.Itoa(int(gallery.ID)))
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	http.Redirect(w, r, url.Path, http.StatusFound)
 }
 
 // POST /galleries/:id/delete
@@ -122,7 +149,8 @@ func (g *Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	user := context.User(r.Context())
 	if gallery.UserID != user.ID {
-		http.Error(w, "Gallery not found", http.StatusNotFound)
+		http.Error(w, "You do not have permission to edit "+
+			"this gallery", http.StatusForbidden)
 		return
 	}
 	var vd views.Data
@@ -130,34 +158,10 @@ func (g *Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		vd.SetAlert(err)
 		vd.Yield = gallery
-		g.EditView.Render(w, vd)
+		g.EditView.Render(w, r, vd)
 		return
 	}
-	http.Redirect(w, r, "/galleries", http.StatusFound)
-}
-
-// POST /galleries
-func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
-	var vd views.Data
-	var form GalleryForm
-	if err := parseForm(r, &form); err != nil {
-		vd.SetAlert(err)
-		g.New.Render(w, vd)
-		return
-	}
-	user := context.User(r.Context())
-	gallery := models.Gallery{
-		Title:  form.Title,
-		UserID: user.ID,
-	}
-	if err := g.gs.Create(&gallery); err != nil {
-		vd.SetAlert(err)
-		g.New.Render(w, vd)
-		return
-	}
-
-	url, err := g.r.Get(EditGallery).URL("id",
-		strconv.Itoa(int(gallery.ID)))
+	url, err := g.r.Get(IndexGalleries).URL()
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
