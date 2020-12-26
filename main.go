@@ -26,6 +26,7 @@ func main() {
 		panic(err)
 	}
 	defer services.Close()
+	//services.DestructiveReset()
 	services.AutoMigrate()
 
 	r := mux.NewRouter()
