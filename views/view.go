@@ -2,6 +2,7 @@ package views
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io"
 	"net/http"
@@ -52,8 +53,9 @@ func (v *View) Render(w http.ResponseWriter, r *http.Request, data interface{}) 
 	var buf bytes.Buffer
 	err := v.Template.ExecuteTemplate(&buf, v.Layout, vd)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Something went wrong. If the problem "+
-			"persists, please email support@lenslocked.com",
+			"persists, please email kally-95@hotmail.com",
 			http.StatusInternalServerError)
 		return
 	}
