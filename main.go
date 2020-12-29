@@ -26,7 +26,6 @@ func main() {
 		panic(err)
 	}
 	defer services.Close()
-	//services.DestructiveReset()
 	services.AutoMigrate()
 
 	r := mux.NewRouter()
@@ -46,11 +45,6 @@ func main() {
 	r.Handle("/login", usersC.LoginView).Methods("GET")
 	r.HandleFunc("/login", usersC.Login).Methods("POST")
 	r.HandleFunc("/cookietest", usersC.CookieTest).Methods("GET")
-
-	// Image routes
-	imageHandler := http.FileServer(http.Dir("./images/"))
-	r.PathPrefix("/images/").Handler(http.StripPrefix("/images/", imageHandler))
-
 	// Gallery routes
 	r.Handle("/galleries",
 		requireUserMw.ApplyFn(galleriesC.Index)).
@@ -79,6 +73,13 @@ func main() {
 	r.HandleFunc("/galleries/{id:[0-9]+}/images",
 		requireUserMw.ApplyFn(galleriesC.ImageUpload)).
 		Methods("POST")
+	r.HandleFunc("/galleries/{id:[0-9]+}/images/{filename}/delete",
+		requireUserMw.ApplyFn(galleriesC.ImageDelete)).
+		Methods("POST")
+
+	// Image routes
+	imageHandler := http.FileServer(http.Dir("./images/"))
+	r.PathPrefix("/images/").Handler(http.StripPrefix("/images/", imageHandler))
 
 	fmt.Println("Starting the server on :3000...")
 	http.ListenAndServe(":3000", userMw.Apply(r))

@@ -1,6 +1,10 @@
 package views
 
-import "github.com/Kally95/Go_Web_App/models"
+import (
+	"log"
+
+	"github.com/Kally95/Go_Web_App/models"
+)
 
 const (
 	AlertLvlError   = "danger"
@@ -10,14 +14,9 @@ const (
 
 	// AlertMsgGeneric is displayed when any random error
 	// is encountered by our backend.
-	AlertMsgGeneric = "Something went wrong. Please try again and contact us if the problem persists."
+	AlertMsgGeneric = "Something went wrong. Please try " +
+		"again, and contact us if the problem persists."
 )
-
-// Alert is used to render Bootstrap Alert messages in templates.
-type Alert struct {
-	Level   string
-	Message string
-}
 
 // Data is the top level structure that views expect data
 // to come in.
@@ -27,26 +26,31 @@ type Data struct {
 	Yield interface{}
 }
 
-func (d *Data) SetAlert(err error) {
-	if pErr, ok := err.(PublicError); ok {
-		d.Alert = &Alert{
-			Level:   AlertLvlError,
-			Message: pErr.Public(),
-		}
-	} else {
-		d.Alert = &Alert{
-			Level:   AlertLvlError,
-			Message: AlertMsgGeneric,
-		}
-
-	}
-}
-
 func (d *Data) AlertError(msg string) {
 	d.Alert = &Alert{
 		Level:   AlertLvlError,
-		Message: AlertMsgGeneric,
+		Message: msg,
 	}
+}
+
+func (d *Data) SetAlert(err error) {
+	var msg string
+	if pErr, ok := err.(PublicError); ok {
+		msg = pErr.Public()
+	} else {
+		log.Println(err)
+		msg = AlertMsgGeneric
+	}
+	d.Alert = &Alert{
+		Level:   AlertLvlError,
+		Message: msg,
+	}
+}
+
+// Alert is used to render Bootstrap Alert messages in templates
+type Alert struct {
+	Level   string
+	Message string
 }
 
 type PublicError interface {
