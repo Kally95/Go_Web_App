@@ -19,7 +19,8 @@ const (
 	maxMultipartMem = 1 << 20 // 1 megabyte
 )
 
-func NewGalleries(gs models.GalleryService, is models.ImageService, r *mux.Router) *Galleries {
+func NewGalleries(gs models.GalleryService,
+	is models.ImageService, r *mux.Router) *Galleries {
 	return &Galleries{
 		New:       views.NewView("bootstrap", "galleries/new"),
 		ShowView:  views.NewView("bootstrap", "galleries/show"),
