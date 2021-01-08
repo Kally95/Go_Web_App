@@ -1,0 +1,17 @@
+/* Styles */
+
+.thumbnail {
+   width: 100%;
+}
+
+footer {
+    padding-top: 60px
+}
+
+.thumbnail {
+    width: 100%;
+    margin-bottom: 6px;
+}
+.btn-delete {
+    margin-bottom: 6px;
+}
