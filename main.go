@@ -7,6 +7,8 @@ import (
 	"github.com/Kally95/Go_Web_App/controllers"
 	"github.com/Kally95/Go_Web_App/middleware"
 	"github.com/Kally95/Go_Web_App/models"
+	"github.com/Kally95/Go_Web_App/rand"
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 )
 
@@ -33,6 +35,14 @@ func main() {
 	staticC := controllers.NewStatic()
 	usersC := controllers.NewUsers(services.User)
 	galleriesC := controllers.NewGalleries(services.Gallery, services.Image, r)
+
+	// TODO: UPdate this to be a config variable
+	isProd := false
+	b, err := rand.Bytes(32)
+	if err != nil {
+		panic(err)
+	}
+	csrfMw := csrf.Protect(b, csrf.Secure(isProd))
 
 	userMw := middleware.User{
 		UserService: services.User,
@@ -88,5 +98,5 @@ func main() {
 	r.PathPrefix("/images/").Handler(http.StripPrefix("/images/", imageHandler))
 
 	fmt.Println("Starting the server on :3000...")
-	http.ListenAndServe(":3000", userMw.Apply(r))
+	http.ListenAndServe(":3000", csrfMw(userMw.Apply(r)))
 }

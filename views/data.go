@@ -1,6 +1,7 @@
 package views
 
 import (
+	"html/template"
 	"log"
 
 	"github.com/Kally95/Go_Web_App/models"
@@ -23,6 +24,7 @@ const (
 type Data struct {
 	Alert *Alert
 	User  *models.User
+	CSRF  template.HTML
 	Yield interface{}
 }
 
