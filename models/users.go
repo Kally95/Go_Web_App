@@ -7,10 +7,11 @@ import (
 	"github.com/Kally95/Go_Web_App/hash"
 	"github.com/Kally95/Go_Web_App/rand"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
+// TODO: Config this
 const (
 	userPwPepper  = "secret-random-string"
 	hmacSecretKey = "secret-hmac-key"

@@ -12,37 +12,28 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const (
-	host     = "localhost"
-	port     = 5432
-	user     = "postgres"
-	password = "secret"
-	dbname   = "go_web_dev"
-)
-
 func main() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
-	services, err := models.NewServices(psqlInfo)
+	cfg := DefaultConfig()
+	dbCfg := DefaultPostgresConfig()
+	services, err := models.NewServices(dbCfg.Dialect(),
+		dbCfg.ConnectionInfo())
 	if err != nil {
 		panic(err)
 	}
 	defer services.Close()
 	services.AutoMigrate()
-	//services.DestructiveReset()
 
 	r := mux.NewRouter()
 	staticC := controllers.NewStatic()
 	usersC := controllers.NewUsers(services.User)
 	galleriesC := controllers.NewGalleries(services.Gallery, services.Image, r)
 
-	// TODO: UPdate this to be a config variable
-	isProd := false
 	b, err := rand.Bytes(32)
 	if err != nil {
 		panic(err)
 	}
-	csrfMw := csrf.Protect(b, csrf.Secure(isProd))
+
+	csrfMw := csrf.Protect(b, csrf.Secure(cfg.IsProd()))
 
 	userMw := middleware.User{
 		UserService: services.User,
@@ -97,6 +88,7 @@ func main() {
 	imageHandler := http.FileServer(http.Dir("./images/"))
 	r.PathPrefix("/images/").Handler(http.StripPrefix("/images/", imageHandler))
 
-	fmt.Println("Starting the server on :3000...")
-	http.ListenAndServe(":3000", csrfMw(userMw.Apply(r)))
+	// TODO: Config this
+	fmt.Printf("Starting the server on :%d...", cfg.Port)
+	http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), csrfMw(userMw.Apply(r)))
 }
